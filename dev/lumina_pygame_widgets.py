@@ -5,19 +5,22 @@ class TextField:
     """Represent field of text."""
 
     def __init__(self, screen, text: str, size: int, bg_color: bool | str | tuple[int, int, int] = False,
-                 text_color: str | tuple[int, int, int] = "black", multi_line: bool = False, surface_width: int = 0,
-                 text_pos: tuple[int, int] = (0,0)) -> None:
-        """Initialize a text field on screen
+                 text_color: str | tuple[int, int, int] = "black", padding: int = 0, multi_line: bool = False,
+                 width: int = 0, text_pos: tuple[int, int] = (0,0)) -> None:
+        """Initialize a text field on screen.
         ARGS:
             screen: pygame window.
             text: string to be shown in text field.
             size: font size for text.
             bg_color: background color for rect. Default is 'False' for transparent background.
             text_color: string or RGB tuple for text color. Default is 'black'.
-            multi_line: boolean to control if text is rendered in a one- or multi-line textfield. Default is 'False'.
+            padding: int for padding between text and field edges.
+            multi_line: boolean to control if text is rendered in a one- or multi-line text field. Default is 'False'.
+
         ARGS for use when 'multi_line=True':
-            surface_width: set width for attribute 'text_surface'. Default is '0'.
+            width: set width for attribute 'text_surface'. Default is '0'.
             text_pos: set starting point for text in 'text_surface'. Default is '(0,0)'.
+
         Default position is centered on screen.
         """
         self.screen = screen
@@ -25,23 +28,22 @@ class TextField:
         self.text: str = text
         self.size: int = size
         self.bg_color: bool | str | tuple[int, int, int] = bg_color
+        self.padding: int = padding
         self.multi_line: bool = multi_line
 
         if text_color == "black":
             self.text_color: str | tuple[int, int, int] = "black"
         else:
             self.text_color: str | tuple[int, int, int] = text_color
-        self.font: pygame.font.Font = pygame.font.Font(settings.font, self.size)
 
-        self.padding: int = int(self.screen_rect.width / 40)
+        self.font: pygame.font.Font = pygame.font.Font(settings.font, self.size)  # TODO
 
         # Get surface for mult-line text field.
         if multi_line:
-            self.surface_width: int = surface_width
+            self.surface_width: int = width
             self.surface_height: int = self.font.get_height()  # Starting value for use in 'render_multiline_surface()'
             self.text_pos: tuple[int, int] = text_pos
             self.text_surface: pygame.Surface = self.render_multiline_surface()
-        # Get surface for standard, one-line text field.
         else:
             self.text_surface: pygame.Surface = self.font.render(self.text, True, self.text_color)
 
@@ -49,25 +51,17 @@ class TextField:
             self.background_rect: pygame.Rect = self.text_surface.get_rect().inflate(self.padding, self.padding)
             self.background_rect.center = self.screen_rect.center
 
-        self.text_rect: pygame.Rect = self.text_surface.get_rect()
-        self.text_rect.center = self.screen_rect.center
+        self.rect: pygame.Rect = self.text_surface.get_rect()
+        self.rect.center = self.screen_rect.center  # TODO add positioning at instantiation
 
-        # Default alpha transparency values. Not used by 'TextField' class, but can be changed and then applied using
-        # '.set_alpha(self.alpha)' elsewhere to be changed to, for example, create a fade-in/fade-out effect.
-        # See 'Button' and 'InteractiveText' class or methods in 'gui/credits.py' as examples.
-        # NOTE: check if surface supports alpha channel (use 'pygame.SRCALPHA' argument when creating a new surface if
-        # not)!
-        self.fade_alpha: int = 0
-        self.background_alpha: int = 255
-        self.fade_speed: int = int(25 * (30 / settings.frame_rate))
 
-    def draw_text(self) -> None:
+    def draw(self) -> None:
         """Draw the text field on the screen."""
         if self.bg_color:
-            self.background_rect.center = self.text_rect.center
+            self.background_rect.center = self.rect.center
             pygame.draw.rect(self.screen, self.bg_color, self.background_rect)
 
-        self.screen.blit(self.text_surface, self.text_rect)
+        self.screen.blit(self.text_surface, self.rect)
 
     def render_multiline_surface(self) -> pygame.Surface:
         """Render and return multi line text surface.
@@ -127,31 +121,14 @@ class TextField:
 
         return text_surface, x, y
 
-    def render_new_text_surface(self, settings_gui: bool = False) -> None:
+    def render_new_text_surface(self) -> None:
         """Re-render 'text_surface' attribute and get new 'text_rect'. This method is for use after an already created
         instance has its 'text' attribute changed to ensure that further changes to, for example, its position are applied
         to the modified instance.
-        ARGS:
-            settings_gui: argument for use when calling method 'update_text_size()' in class 'SettingsGUI' to ensure
-                          screen elements in the settings screen change their text size if a new window size is selected.
-                          Ignore in all other cases. Default is 'False'.
         """
-        if settings_gui:
-            self.font: pygame.font.Font = pygame.font.Font(settings.font, self.size)
-
         if self.multi_line:
             self.text_surface: pygame.Surface = self.render_multiline_surface()
         else:
             self.text_surface: pygame.Surface = self.font.render(self.text, True, self.text_color)
 
-        self.text_rect: pygame.Rect = self.text_surface.get_rect()
-
-    def blit_surface(self, surface: pygame.Surface, rect: pygame.Rect, color: str | tuple[int, int, int]) -> None:
-        """Fill 'surface' with 'color' attribute and blit it onto the screen at 'rect'.
-        ARGS:
-            surface: pygame surface.
-            rect: pygame rect.
-            color: color attribute.
-        """
-        surface.fill(color)
-        self.screen.blit(surface, rect)
+        self.rect: pygame.Rect = self.text_surface.get_rect()
